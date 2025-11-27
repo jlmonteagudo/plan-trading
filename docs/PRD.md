@@ -33,20 +33,21 @@ Al detectar una señal, el bot enviará una notificación a un canal privado de 
 ## 4. Requisitos Técnicos (RT)
 
 - **RT-01: Lenguaje de Programación:** TypeScript.
-- **RT-02: Plataforma de Despliegue:** Cloudflare Workers.
+- **RT-02: Plataforma de Despliegue:** Digital Ocean Droplet (Node.js).
 - **RT-03: Arquitectura de Despliegue:**
-    - Un Worker "Scanner" con un `Cron Trigger` para la detección de señales.
-    - Un Worker "Executor" como endpoint HTTP para recibir webhooks de Telegram.
+    - Aplicación Node.js monolítica ejecutando:
+        - Un servidor HTTP (Fastify) para el "Executor" (Webhooks de Telegram).
+        - Un proceso programado (node-cron) para el "Scanner".
 - **RT-04: Interacción con Exchange:** Librería CCXT para la comunicación con la API de Binance.
 - **RT-05: Interacción con Telegram:** API de bots de Telegram para enviar mensajes y procesar callbacks de botones.
-- **RT-06: Dependencias:** El proyecto se gestionará con `npm` o `yarn`.
-- **RT-07: Gestión de Secretos:** Las claves de API (Binance, Telegram) y otros tokens sensibles deben gestionarse como `secrets` en el entorno de Cloudflare y no deben ser versionados en el código fuente.
+- **RT-06: Dependencias:** El proyecto se gestionará con `npm`.
+- **RT-07: Gestión de Secretos:** Las variables de entorno se gestionarán mediante un fichero `.env` no versionado.
 - **RT-08: Seguridad del Webhook:** La autenticación del webhook de Telegram se realizará mediante un token secreto compartido en la URL del webhook.
-- **RT-09: Despliegue Automatizado (CI/CD):** El despliegue a Cloudflare se automatizará mediante GitHub Actions, activándose en cada push a la rama principal del repositorio.
+- **RT-09: Despliegue Automatizado (CI/CD):** (Opcional) Despliegue mediante GitHub Actions o manual via SSH/Git pull en el servidor.
 
 ## 5. Flujo de Trabajo Detallado
 
-1.  **Inicio (Cron Trigger):** Cada 5 minutos, el Worker "Scanner" se activa.
+1.  **Inicio (Cron Job):** Según la configuración `CRON_SCHEDULE`, el proceso "Scanner" se activa dentro de la aplicación Node.js.
 2.  **Obtener Tickers:** El Scanner pide a Binance todos los tickers.
 3.  **Filtrar y Seleccionar:** Filtra los pares `*/USDC` con volumen > `MIN_VOLUME_24H` y se queda con el `TOP_N_MARKETS` por volumen.
 4.  **Analizar Mercados:** Para cada uno de los N mercados:
@@ -59,13 +60,14 @@ Al detectar una señal, el bot enviará una notificación a un canal privado de 
 7.  **Interacción del Usuario:** El usuario recibe el mensaje.
     a. **Opción Manual:** Hace clic en el deep link, analiza y opera manualmente.
     b. **Opción Automática:** Pulsa el botón "Comprar".
-8.  **Ejecución de Compra:** Telegram envía un webhook a la URL del Worker "Executor" (incluyendo el token secreto).
-9.  **Procesar Orden:** El Executor valida el token secreto. Si es válido, parsea el `callback_data`, y ejecuta la compra a mercado del activo y la posterior orden OCO en Binance.
+8.  **Ejecución de Compra:** Telegram envía un webhook a la URL pública del servidor Node.js (incluyendo el token secreto).
+9.  **Procesar Orden:** El servidor (Fastify) valida el token secreto. Si es válido, parsea el `callback_data`, y ejecuta la compra a mercado del activo y la posterior orden OCO en Binance.
 
-## 6. Parámetros de Configuración (`config.ts`)
+## 6. Parámetros de Configuración (`.env`)
 
 | Parámetro | Descripción | Valor Inicial Propuesto |
 | :--- | :--- | :--- |
+| `PORT` | Puerto del servidor HTTP | `3000` |
 | `CRON_SCHEDULE` | Frecuencia de ejecución del scanner | `*/5 * * * *` (Cada 5 min) |
 | `QUOTE_CURRENCY` | Moneda de cotización a buscar | `USDC` |
 | `MIN_VOLUME_24H` | Volumen mínimo en 24h para considerar un mercado | `10000000` |
@@ -78,19 +80,14 @@ Al detectar una señal, el bot enviará una notificación a un canal privado de 
 | `TAKE_PROFIT_FACTOR` | Multiplicador para el Take Profit de la OCO | `1.025` (+2.5%) |
 | `STOP_LOSS_FACTOR` | Multiplicador para el Stop Loss de la OCO | `0.9875` (-1.25%) |
 
-## 7. Fases de Desarrollo (Propuesta)
+## 7. Fases de Desarrollo (Actualizado)
 
-- **Fase 1: Configuración y Scanner.**
-    - Inicializar proyecto en TypeScript.
-    - Crear el fichero de configuración.
-    - Desarrollar toda la lógica del Scanner (RF-01 a RF-06).
-    - Probar localmente que se detectan señales y se envían a Telegram.
-- **Fase 2: Executor y Órdenes.**
-    - Desarrollar el Worker Executor.
-    - Implementar la lógica de recepción de webhooks (RF-10).
-    - Implementar la ejecución de órdenes de compra y OCO (RF-07, RF-08).
-- **Fase 3: Despliegue y Pruebas E2E.**
-    - Configurar el entorno de Cloudflare y los secretos (RT-07).
-    - Configurar el CI/CD con GitHub Actions (RT-09).
-    - Desplegar ambos workers.
-    - Realizar pruebas completas en el entorno real con capital bajo.
+- **Fase 1: Migración a Node.js (Completada)**
+    - Adaptar código de Cloudflare Workers a Node.js + Fastify.
+    - Implementar Cron Job interno.
+    - Configurar gestión de variables de entorno.
+- **Fase 2: Despliegue y Pruebas.**
+    - Configurar Droplet en Digital Ocean.
+    - Clonar repositorio y configurar `.env`.
+    - Ejecutar `npm install` y `npm run build`.
+    - Iniciar aplicación con `pm2` o similar para persistencia.

@@ -23,4 +23,4 @@ jobs:
             git pull origin main
             npm install
             npm run build
-            pm2 restart trading-bot
+            pm2 restart plan-trading

@@ -123,6 +123,7 @@ async function analyzeMarket(exchange: ccxt.Exchange, market: ccxt.Ticker, bot: 
 
 export async function runScanner(config: Config): Promise<void> {
   console.log(`Scanner triggered at ${new Date().toISOString()}`);
+  console.log(`Binance api key: ${config.BINANCE_API_KEY}`);
 
   const exchange = new ccxt.binance({
     apiKey: config.BINANCE_API_KEY,

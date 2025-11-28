@@ -34,7 +34,26 @@ async function placeOcoOrder(exchange: ccxt.Exchange, buyOrder: ccxt.Order, conf
   const amountPrecision = exchange.market(symbol).precision.amount;
   const pricePrecision = exchange.market(symbol).precision.price;
 
-  const quantity = exchange.amountToPrecision(symbol, filled);
+  // Calculate net quantity (filled - fees paid in base currency)
+  const [base] = symbol.split('/');
+  let quantityToSell = filled;
+
+  // Cast to any to avoid TS issues if types are missing 'fees'
+  const orderData = buyOrder as any;
+
+  if (orderData.fees && orderData.fees.length > 0) {
+    for (const fee of orderData.fees) {
+      if (fee.currency === base && typeof fee.cost === 'number') {
+        quantityToSell -= fee.cost;
+      }
+    }
+  } else if (buyOrder.fee && buyOrder.fee.currency === base && typeof buyOrder.fee.cost === 'number') {
+    quantityToSell -= buyOrder.fee.cost;
+  }
+
+  console.log(`Original filled: ${filled}, Net quantity after fees: ${quantityToSell}`);
+
+  const quantity = exchange.amountToPrecision(symbol, quantityToSell);
   const formattedTakeProfitPrice = exchange.priceToPrecision(symbol, takeProfitPrice);
   const formattedStopPrice = exchange.priceToPrecision(symbol, stopPrice);
   const formattedStopLimitPrice = exchange.priceToPrecision(symbol, stopLimitPrice);

@@ -18,8 +18,15 @@ export class UpsideTrend implements SignalDetector {
     }
 
     // Extract close prices (y) and create time indices (x)
-    const closes = ohlcv.map(candle => candle[4]); // Index 4 is close price
-    const n = closes.length;
+    const validCloses = ohlcv
+      .map(candle => candle[4])
+      .filter((p): p is number => p !== undefined && p !== null);
+
+    if (validCloses.length < 2) {
+      return { isSignal: false };
+    }
+
+    const n = validCloses.length;
     
     // Normalize prices to percentage change from the first candle to make slope comparable across different price ranges
     // Or simply use raw prices? The user prompt mentioned "sustained growing movement".
@@ -27,10 +34,10 @@ export class UpsideTrend implements SignalDetector {
     // Better to normalize: y = (price / first_price) - 1
     // This way slope represents "percentage growth per candle".
     
-    const firstPrice = closes[0];
+    const firstPrice = validCloses[0];
     if (!firstPrice) return { isSignal: false };
 
-    const y = closes.map(p => (p! / firstPrice) - 1);
+    const y = validCloses.map(p => (p / firstPrice) - 1);
     const x = Array.from({ length: n }, (_, i) => i);
 
     // Linear Regression Calculation

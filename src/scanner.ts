@@ -31,7 +31,7 @@ async function getTopMarkets(exchange: ccxt.Exchange, config: Config): Promise<c
       ticker.quoteVolume > minVolume
   );
 
-  marketsSelectedByQuote.sort((a, b) => (b.quoteVolume || 0) - (a.quoteVolume || 0));
+  marketsSelectedByQuote.sort((a, b) => (b.percentage || 0) - (a.percentage || 0));
   return marketsSelectedByQuote.slice(0, topN);
 }
 
@@ -59,9 +59,13 @@ async function sendTelegramNotification(bot: Telegraf, config: Config, market: c
   `;
 
   try {
-    await bot.telegram.sendMessage(config.TELEGRAM_CHAT_ID, message, {
+    const isLocalhost = config.EXECUTOR_WEBHOOK_URL.includes('localhost') || config.EXECUTOR_WEBHOOK_URL.includes('127.0.0.1');
+    const extra: any = {
       parse_mode: 'Markdown',
-      reply_markup: {
+    };
+
+    if (!isLocalhost) {
+      extra.reply_markup = {
         inline_keyboard: [
           [
             {
@@ -70,8 +74,12 @@ async function sendTelegramNotification(bot: Telegraf, config: Config, market: c
             },
           ],
         ],
-      },
-    });
+      };
+    } else {
+        message += '\n_(Botón de compra deshabilitado en localhost)_';
+    }
+
+    await bot.telegram.sendMessage(config.TELEGRAM_CHAT_ID, message, extra);
     console.log(`Signal for ${market.symbol} sent to Telegram.`);
   } catch (telegramError) {
     console.error(`Error sending Telegram message for ${market.symbol}:`, telegramError);
@@ -106,6 +114,9 @@ async function analyzeMarket(exchange: ccxt.Exchange, market: ccxt.Ticker, bot: 
       }
       await sendTelegramNotification(bot, config, market, result);
       return; // Stop after first signal
+    } else if (detector.name === 'UpsideTrend' && result.metadata) {
+       // Debug logging for UpsideTrend to help user tune parameters
+       console.log(`[UpsideTrend] ${market.symbol}: Slope=${result.metadata.slope?.toFixed(6)}, R2=${result.metadata.r2?.toFixed(4)} (Thresholds: Slope>${result.metadata.minSlope}, R2>${result.metadata.minR2})`);
     }
   }
 }

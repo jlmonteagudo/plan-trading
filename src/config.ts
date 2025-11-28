@@ -40,7 +40,7 @@ export const config: Config = {
 
   CRON_SCHEDULE: process.env.CRON_SCHEDULE || '*/1 * * * *',
   QUOTE_CURRENCY: process.env.QUOTE_CURRENCY || 'USDC',
-  MIN_VOLUME_24H: process.env.MIN_VOLUME_24H || '10000000',
+  MIN_VOLUME_24H: process.env.MIN_VOLUME_24H || '1000000',
   TOP_N_MARKETS: process.env.TOP_N_MARKETS || '20',
   CANDLE_TIMEFRAME: process.env.CANDLE_TIMEFRAME || '5m',
   CANDLE_HISTORY_COUNT: process.env.CANDLE_HISTORY_COUNT || '100',
@@ -52,6 +52,6 @@ export const config: Config = {
   PORT: parseInt(process.env.PORT || '3000', 10),
   ACTIVE_SIGNALS: (process.env.ACTIVE_SIGNALS || 'SpikeVolumeAndPrice').split(','),
 
-  UPSIDE_TREND_MIN_SLOPE: process.env.UPSIDE_TREND_MIN_SLOPE || '0.0005',
-  UPSIDE_TREND_MIN_R2: process.env.UPSIDE_TREND_MIN_R2 || '0.5',
+  UPSIDE_TREND_MIN_SLOPE: process.env.UPSIDE_TREND_MIN_SLOPE || '0.0001',
+  UPSIDE_TREND_MIN_R2: process.env.UPSIDE_TREND_MIN_R2 || '0.4',
 };

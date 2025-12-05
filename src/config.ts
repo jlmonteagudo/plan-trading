@@ -50,7 +50,7 @@ export const config: Config = {
   TAKE_PROFIT_FACTOR: process.env.TAKE_PROFIT_FACTOR || '1.025',
   STOP_LOSS_FACTOR: process.env.STOP_LOSS_FACTOR || '0.9875',
   PORT: parseInt(process.env.PORT || '3000', 10),
-  ACTIVE_SIGNALS: (process.env.ACTIVE_SIGNALS || 'SpikeVolumeAndPrice').split(','),
+  ACTIVE_SIGNALS: (process.env.ACTIVE_SIGNALS || 'UpsideTrendV2').split(','),
 
   UPSIDE_TREND_MIN_SLOPE: process.env.UPSIDE_TREND_MIN_SLOPE || '0.0001',
   UPSIDE_TREND_MIN_R2: process.env.UPSIDE_TREND_MIN_R2 || '0.4',

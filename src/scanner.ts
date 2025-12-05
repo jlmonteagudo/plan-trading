@@ -4,10 +4,12 @@ import type { Config } from './config.js';
 import type { SignalDetector, SignalResult } from './signals/SignalDetector.js';
 import { SpikeVolumeAndPrice } from './signals/SpikeVolumeAndPrice.js';
 import { UpsideTrend } from './signals/UpsideTrend.js';
+import { UpsideTrendV2 } from './signals/UpsideTrendV2.js';
 
 const AVAILABLE_SIGNALS: { [key: string]: new (config: Config) => SignalDetector } = {
   'SpikeVolumeAndPrice': SpikeVolumeAndPrice,
   'UpsideTrend': UpsideTrend,
+  'UpsideTrendV2': UpsideTrendV2
 };
 
 async function getTopMarkets(exchange: ccxt.Exchange, config: Config): Promise<ccxt.Ticker[]> {
@@ -117,6 +119,8 @@ async function analyzeMarket(exchange: ccxt.Exchange, market: ccxt.Ticker, bot: 
     } else if (detector.name === 'UpsideTrend' && result.metadata) {
        // Debug logging for UpsideTrend to help user tune parameters
        console.log(`[UpsideTrend] ${market.symbol}: Slope=${result.metadata.slope?.toFixed(6)}, R2=${result.metadata.r2?.toFixed(4)} (Thresholds: Slope>${result.metadata.minSlope}, R2>${result.metadata.minR2})`);
+    } else if (detector.name === 'UpsideTrendV2' && result.metadata) {
+       console.log(`[UpsideTrendV2] ${market.symbol}: Slope=${result.metadata.slope?.toFixed(6)}, R2=${result.metadata.r2?.toFixed(4)} (Thresholds: Slope>${result.metadata.minSlope}, R2>${result.metadata.minR2})`);
     }
   }
 }
@@ -136,6 +140,8 @@ export async function runScanner(config: Config): Promise<void> {
 
   const detectors: SignalDetector[] = [];
   for (const signalName of config.ACTIVE_SIGNALS) {
+    console.log(`Validating signal: ${signalName}`);
+
     const DetectorClass = AVAILABLE_SIGNALS[signalName.trim()];
     if (DetectorClass) {
       detectors.push(new DetectorClass(config));
